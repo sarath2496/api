@@ -4,6 +4,8 @@ import webbrowser
 import requests
 from flask import Flask, request
 from requests_oauthlib import OAuth2Session
+from flask import session
+from flask_session import Session
 from threading import Thread
 import json
 import time
@@ -25,13 +27,16 @@ class _Multion:
         self.refresh_url = 'https://auth.multion.ai/oauth2/token'
 
         # Try to load the token from the token file
-        if os.path.exists(self.token_file) and os.path.getsize(self.token_file) > 0:  # check if file is not empty
+        # Try to load the token from the session first, then fallback to the token file
+        self.token = session.get('token')
+        if not self.token and os.path.exists(self.token_file) and os.path.getsize(self.token_file) > 0:
             with open(self.token_file, 'r') as f:
                 try:
                     self.token = json.load(f)
                 except json.JSONDecodeError:
                     print("Error reading token from file. The file might be corrupted.")
                     self.token = None
+
 
     def login(self):
         # If the token is already loaded, no need to log in again
