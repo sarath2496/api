@@ -123,6 +123,10 @@ class SendblueInput(BaseModel):
     was_downgraded: bool = False
     plan: str = "blue"
 
+AGENT_EXECUTING = defaultdict(lambda: 'idle')
+
+def set_agent_status(user: str, status: str):
+    AGENT_EXECUTING[user] = status
 
 @app.post("/agent")
 async def agent(request: Request):
@@ -134,6 +138,18 @@ async def agent(request: Request):
     print("input_data")
     print(input_data)
     user = input_data.get("number")
+    # check if agent is paused for this user
+    if AGENT_EXECUTING[user] == 'paused':
+        return {"resp": "Agent is paused."}
+    # If message is 'pause', set agent status to paused
+    content = input_data.get("content")
+    if content.strip().lower() == "pause":
+        set_agent_status(user, 'paused')
+        return {"resp": "Agent paused."}
+    # If message is 'resume', set agent status to idle
+    if content.strip().lower() == "resume":
+        set_agent_status(user, 'idle')
+        return {"resp": "Agent resumed."}
     content = input_data.get("content")
     buffer = load_memory_for_user(user)
     # TODO: check if agent is already running for this user, use agent scratchpad if so
